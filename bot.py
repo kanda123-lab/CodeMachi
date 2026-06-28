@@ -14,6 +14,7 @@ from handlers.start import start_handler, mode_handler, mode_callback
 from handlers.chat import message_handler
 from handlers.usage import usage_handler, usage_callback
 from handlers.learn import learn_handler, learn_callback
+from handlers.topic import topic_handler, topic_callback
 
 load_dotenv()
 
@@ -40,11 +41,14 @@ def main():
 
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("mode", mode_handler))
+    app.add_handler(CommandHandler("topic", topic_handler))
     app.add_handler(CommandHandler("usage", usage_handler))
     app.add_handler(CommandHandler("learn", learn_handler))
 
     app.add_handler(CallbackQueryHandler(mode_callback, pattern="^mode_"))
     app.add_handler(CallbackQueryHandler(mode_callback, pattern="^show_mode$"))
+    app.add_handler(CallbackQueryHandler(topic_callback, pattern="^topic_"))
+    app.add_handler(CallbackQueryHandler(topic_callback, pattern="^show_topic$"))
     app.add_handler(CallbackQueryHandler(learn_callback, pattern="^learn_"))
     app.add_handler(CallbackQueryHandler(learn_callback, pattern="^show_learn$"))
     app.add_handler(CallbackQueryHandler(usage_callback, pattern="^show_usage$"))

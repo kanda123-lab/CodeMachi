@@ -13,10 +13,13 @@ MODE_KEYBOARD = InlineKeyboardMarkup([
 
 QUICK_ACTIONS_KEYBOARD = InlineKeyboardMarkup([
     [
-        InlineKeyboardButton("🔁 Switch Mode", callback_data="show_mode"),
-        InlineKeyboardButton("📚 Learn a Topic", callback_data="show_learn"),
-        InlineKeyboardButton("📊 My Usage", callback_data="show_usage"),
-    ]
+        InlineKeyboardButton("🔁 Language", callback_data="show_mode"),
+        InlineKeyboardButton("🎯 Topic", callback_data="show_topic"),
+    ],
+    [
+        InlineKeyboardButton("📚 Learn", callback_data="show_learn"),
+        InlineKeyboardButton("📊 Usage", callback_data="show_usage"),
+    ],
 ])
 
 
@@ -25,9 +28,10 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     upsert_user(user_id)
 
     await update.message.reply_text(
-        "👋 Vanakam! I'm *CodeMachi* — your coding buddy!\n\n"
-        "I can explain programming concepts in the language style you're most comfortable with.\n\n"
-        "Pick your mode to get started:",
+        "👋 Vanakam! I'm *CodeMachi* — your AI buddy!\n\n"
+        "I can help with *Code*, *Medical*, *Sports*, or *General* topics — "
+        "in Tanglish, Tamil, or English.\n\n"
+        "First, pick your language style:",
         parse_mode="Markdown",
         reply_markup=MODE_KEYBOARD,
     )

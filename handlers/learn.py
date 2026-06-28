@@ -2,28 +2,31 @@ import logging
 import anthropic
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from db import get_mode, check_and_increment_usage, upsert_user
-from prompts import PROMPTS, DEFAULT_MODE
+from db import get_mode, get_topic, check_and_increment_usage, upsert_user
+from prompts import get_prompt
 from handlers.start import QUICK_ACTIONS_KEYBOARD
 
 logger = logging.getLogger(__name__)
 
-TOPICS = ["Python", "JavaScript", "React", "DSA", "SQL", "Git", "Node.js", "System Design"]
-
-LEARN_KEYBOARD = InlineKeyboardMarkup([
-    [
-        InlineKeyboardButton("🐍 Python", callback_data="learn_Python"),
-        InlineKeyboardButton("⚡ JavaScript", callback_data="learn_JavaScript"),
-        InlineKeyboardButton("⚛️ React", callback_data="learn_React"),
-        InlineKeyboardButton("🧩 DSA", callback_data="learn_DSA"),
+LEARN_TOPICS = {
+    "code": [
+        ("🐍", "Python"), ("⚡", "JavaScript"), ("⚛️", "React"), ("🧩", "DSA"),
+        ("🗄️", "SQL"), ("🌿", "Git"), ("🟩", "Node.js"), ("🏗️", "System Design"),
     ],
-    [
-        InlineKeyboardButton("🗄️ SQL", callback_data="learn_SQL"),
-        InlineKeyboardButton("🌿 Git", callback_data="learn_Git"),
-        InlineKeyboardButton("🟩 Node.js", callback_data="learn_Node.js"),
-        InlineKeyboardButton("🏗️ System Design", callback_data="learn_System Design"),
+    "medical": [
+        ("🫀", "Cardiology"), ("🧠", "Neurology"), ("💊", "Pharmacology"), ("🩺", "Anatomy"),
+        ("🏥", "First Aid"), ("🥗", "Nutrition"), ("🧬", "Genetics"), ("🧘", "Mental Health"),
+        ("🫘", "Renal Dialysis"), ("🤰", "Obstetrics & Gynecology"),
     ],
-])
+    "sports": [
+        ("⚽", "Football"), ("🏏", "Cricket"), ("🎾", "Tennis"), ("🏋️", "Fitness"),
+        ("🏀", "Basketball"), ("🏊", "Swimming"), ("🚴", "Cycling"), ("🥊", "Boxing"),
+    ],
+    "general": [
+        ("📖", "History"), ("🌍", "Geography"), ("🔭", "Science"), ("🎨", "Art"),
+        ("💰", "Finance"), ("🍳", "Cooking"), ("🌐", "Technology"), ("📝", "Writing"),
+    ],
+}
 
 LEARN_INTRO = {
     "tanglish": "📚 Enna topic learn pannanum? Oru button press pannu:",
@@ -32,14 +35,27 @@ LEARN_INTRO = {
 }
 
 
+def build_learn_keyboard(topic: str) -> InlineKeyboardMarkup:
+    items = LEARN_TOPICS.get(topic, LEARN_TOPICS["code"])
+    rows = []
+    for i in range(0, len(items), 4):
+        row = [
+            InlineKeyboardButton(f"{emoji} {name}", callback_data=f"learn_{name}")
+            for emoji, name in items[i:i + 4]
+        ]
+        rows.append(row)
+    return InlineKeyboardMarkup(rows)
+
+
 async def learn_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     upsert_user(user_id)
     mode = get_mode(user_id)
+    topic = get_topic(user_id)
 
     await update.message.reply_text(
         LEARN_INTRO.get(mode, LEARN_INTRO["english"]),
-        reply_markup=LEARN_KEYBOARD,
+        reply_markup=build_learn_keyboard(topic),
     )
 
 
@@ -53,18 +69,20 @@ async def learn_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data == "show_learn":
         upsert_user(user_id)
         mode = get_mode(user_id)
+        topic = get_topic(user_id)
         await query.message.reply_text(
             LEARN_INTRO.get(mode, LEARN_INTRO["english"]),
-            reply_markup=LEARN_KEYBOARD,
+            reply_markup=build_learn_keyboard(topic),
         )
         return
 
     if not data.startswith("learn_"):
         return
 
-    topic = data.replace("learn_", "")
+    subject = data.replace("learn_", "")
     upsert_user(user_id)
     mode = get_mode(user_id)
+    topic = get_topic(user_id)
 
     usage = check_and_increment_usage(user_id)
     if not usage["allowed"]:
@@ -76,9 +94,12 @@ async def learn_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         client = anthropic.Anthropic()
-        system_prompt = PROMPTS.get(mode, PROMPTS[DEFAULT_MODE])
+        system_prompt = get_prompt(topic, mode)
 
-        learn_prompt = f"Teach me {topic} from the very basics. Start with what it is, why it matters, and show me a simple first example with clear explanation."
+        learn_prompt = (
+            f"Teach me {subject} from the very basics. "
+            "Start with what it is, why it matters, and give me a simple first example with clear explanation."
+        )
 
         message = client.messages.create(
             model="claude-sonnet-4-6",

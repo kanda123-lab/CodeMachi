@@ -16,12 +16,18 @@ def init_db():
             CREATE TABLE IF NOT EXISTS users (
                 telegram_id INTEGER PRIMARY KEY,
                 mode TEXT NOT NULL DEFAULT 'tanglish',
+                topic TEXT NOT NULL DEFAULT 'code',
                 daily_count INTEGER NOT NULL DEFAULT 0,
                 last_reset_date TEXT,
                 is_pro INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL DEFAULT (date('now'))
             )
         """)
+        # Migrate existing databases that lack the topic column
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN topic TEXT NOT NULL DEFAULT 'code'")
+        except Exception:
+            pass
         conn.commit()
 
 
@@ -54,6 +60,19 @@ def set_mode(telegram_id: int, mode: str):
 def get_mode(telegram_id: int) -> str:
     user = get_user(telegram_id)
     return user["mode"] if user else "tanglish"
+
+
+def set_topic(telegram_id: int, topic: str):
+    with get_connection() as conn:
+        conn.execute(
+            "UPDATE users SET topic = ? WHERE telegram_id = ?", (topic, telegram_id)
+        )
+        conn.commit()
+
+
+def get_topic(telegram_id: int) -> str:
+    user = get_user(telegram_id)
+    return user["topic"] if user else "code"
 
 
 def check_and_increment_usage(telegram_id: int) -> dict:

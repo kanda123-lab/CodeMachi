@@ -2,8 +2,8 @@ import logging
 import anthropic
 from telegram import Update
 from telegram.ext import ContextTypes
-from db import get_mode, check_and_increment_usage, upsert_user
-from prompts import PROMPTS, DEFAULT_MODE
+from db import get_mode, get_topic, check_and_increment_usage, upsert_user
+from prompts import get_prompt
 from handlers.start import QUICK_ACTIONS_KEYBOARD
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     upsert_user(user_id)
     mode = get_mode(user_id)
+    topic = get_topic(user_id)
 
     usage = check_and_increment_usage(user_id)
     if not usage["allowed"]:
@@ -42,7 +43,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         client = anthropic.Anthropic()
-        system_prompt = PROMPTS.get(mode, PROMPTS[DEFAULT_MODE])
+        system_prompt = get_prompt(topic, mode)
 
         message = client.messages.create(
             model="claude-sonnet-4-6",
