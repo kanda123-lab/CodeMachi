@@ -16,7 +16,7 @@ LEARN_TOPICS = {
     "medical": [
         ("🫀", "Cardiology"), ("🧠", "Neurology"), ("💊", "Pharmacology"), ("🩺", "Anatomy"),
         ("🏥", "First Aid"), ("🥗", "Nutrition"), ("🧬", "Genetics"), ("🧘", "Mental Health"),
-        ("🫘", "Renal Dialysis"), ("🤰", "Obstetrics & Gynecology"),
+        ("🫘", "Renal Dialysis"), ("🤰", "Obstetrics & Gynecology"), ("🦴", "Physiotherapy"),
     ],
     "sports": [
         ("⚽", "Football"), ("🏏", "Cricket"), ("🎾", "Tennis"), ("🏋️", "Fitness"),
